@@ -135,7 +135,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
           labels: |
             org.opencontainers.image.title=BlazeSolver
-            org.opencontainers.image.authors=Artem
+            org.opencontainers.image.authors=cdxy1
             org.opencontainers.image.licenses=MIT
       - name: Build and publish
         uses: docker/build-push-action@v7

@@ -95,5 +95,5 @@ or `bash tools/build-release.sh windows`.
 
 ## License
 
-MIT. Go implementation copyright 2026 Artem. Existing copyright notices are
+MIT. Go implementation copyright 2026 cdxy1. Existing copyright notices are
 retained in [LICENSE](LICENSE).
