@@ -39,7 +39,7 @@ func NewServer(cfg Config) *Server {
 		cfg.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	}
 	if cfg.Version == "" {
-		cfg.Version = "3.5.2"
+		cfg.Version = "1.0.0"
 	}
 	return &Server{cfg: cfg, sessions: sessionStore{entries: make(map[string]*savedSession)}, launch: LaunchBrowser, solve: Solve, metrics: newMetrics()}
 }

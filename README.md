@@ -76,8 +76,8 @@ cross-compilation, real Chromium on native AMD64/ARM64 runners, and service star
 with a noexec tmpfs. The runtime image is checked for absence of Go and Python.
 
 After checks pass, default-branch pushes publish `ghcr.io/cdxy1/blazesolver:latest`
-and a `sha-<commit>` tag. Version tags such as `v3.5.3` also publish `3.5.3`,
-`v3.5.3` and `3.5`; stable versions receive `latest`. Images support Linux AMD64,
+and a `sha-<commit>` tag. Version tags such as `v1.0.0` also publish `1.0.0`,
+`v1.0.0` and `1.0`; stable versions receive `latest`. Images support Linux AMD64,
 ARM64, ARMv7 and 386. Pull requests cannot publish. Publishing uses the built-in
 `GITHUB_TOKEN`; no personal access token is needed.
 

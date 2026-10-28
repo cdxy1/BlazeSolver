@@ -1,6 +1,6 @@
 {
   "name": "blazesolver",
-  "version": "3.5.2",
+  "version": "1.0.0",
   "description": "Undetected Chromium proxy with a compact Go implementation",
   "author": "cdxy1",
   "license": "MIT",

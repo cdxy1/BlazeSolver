@@ -41,7 +41,7 @@ func TestRealUndetectedBrowser(t *testing.T) {
 		}
 	}))
 	defer fixture.Close()
-	cfg := Config{Headless: envBool("HEADLESS", true), ChromePath: envOr("CHROME_PATH", ""), DriverPath: envOr("DRIVER_PATH", ""), CacheDir: t.TempDir(), BrowserWaitTimeout: time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Version: "3.5.2"}
+	cfg := Config{Headless: envBool("HEADLESS", true), ChromePath: envOr("CHROME_PATH", ""), DriverPath: envOr("DRIVER_PATH", ""), CacheDir: t.TempDir(), BrowserWaitTimeout: time.Second, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Version: "1.0.0"}
 	server := NewServer(cfg)
 	defer server.Close()
 	call := func(req Request) (int, map[string]any) {

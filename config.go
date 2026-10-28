@@ -30,7 +30,7 @@ func loadConfig() (Config, error) {
 		Language: os.Getenv("LANG"), Headless: envBool("HEADLESS", true),
 		DisableMedia: envBool("DISABLE_MEDIA", false), LogHTML: envBool("LOG_HTML", false),
 		PrometheusEnabled: envBool("PROMETHEUS_ENABLED", false), PrometheusPort: envOr("PROMETHEUS_PORT", "8192"),
-		Version: "3.5.2",
+		Version: "1.0.0",
 	}
 	seconds, err := strconv.Atoi(envOr("BROWSER_WAIT_TIMEOUT", "1"))
 	if err != nil {

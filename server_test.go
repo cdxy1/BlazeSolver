@@ -31,7 +31,7 @@ type serverHarness struct {
 func testServer(t *testing.T) *serverHarness {
 	t.Helper()
 	harness := &serverHarness{server: NewServer(solverConfig())}
-	harness.server.cfg.Version = "3.5.2"
+	harness.server.cfg.Version = "1.0.0"
 	harness.server.launch = func(ctx context.Context, cfg Config, proxy map[string]any, ua string) (*Browser, error) {
 		id := harness.launches.Add(1)
 		harness.mu.Lock()
@@ -92,7 +92,7 @@ func TestHTTPValidationContract(t *testing.T) {
 			if status != 500 || body["status"] != "error" || body["message"] != "Error: "+test.message {
 				t.Fatalf("status=%d body=%#v", status, body)
 			}
-			if body["version"] != "3.5.2" || body["startTimestamp"].(float64) > body["endTimestamp"].(float64) {
+			if body["version"] != "1.0.0" || body["startTimestamp"].(float64) > body["endTimestamp"].(float64) {
 				t.Fatal(body)
 			}
 			if _, hidden := body["__error_500__"]; hidden {
@@ -125,7 +125,7 @@ func TestRoutingAndBodyHandling(t *testing.T) {
 		})
 	}
 	_, body, _ := apiRequest(t, h.server, "GET", "/", "", "")
-	if !reflect.DeepEqual(body, map[string]any{"msg": "BlazeSolver is ready!", "version": "3.5.2", "userAgent": "Chrome/Test"}) {
+	if !reflect.DeepEqual(body, map[string]any{"msg": "BlazeSolver is ready!", "version": "1.0.0", "userAgent": "Chrome/Test"}) {
 		t.Fatal(body)
 	}
 	for _, input := range []string{"", "null", "false", "[]", "{}"} {
