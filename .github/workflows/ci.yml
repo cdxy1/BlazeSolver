@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  go:
+    name: Go checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Formatting
+        run: test -z "$(gofmt -l *.go)"
+      - name: Unit and race tests
+        run: go test -race -coverprofile=coverage.out ./...
+      - run: go vet ./...
+      - name: Build supported binaries
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o dist/blazesolver-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -trimpath -o dist/blazesolver-linux-386 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -o dist/blazesolver-linux-armv7 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o dist/blazesolver-linux-arm64 .
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o dist/blazesolver-windows-amd64.exe .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -o dist/blazesolver-macos-arm64 .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: binaries-and-coverage
+          path: |
+            dist/
+            coverage.out
+          retention-days: 7
+
+  browser:
+    name: Chromium (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: docker/setup-buildx-action@v4
+      - name: Build runtime image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: blazesolver:ci
+          cache-from: type=gha,scope=browser-${{ matrix.arch }}
+          cache-to: type=gha,scope=browser-${{ matrix.arch }},mode=max
+      - name: Compile browser tests
+        run: CGO_ENABLED=0 go test -c -tags=integration -o "$RUNNER_TEMP/browser.test" .
+      - name: Real browser integration tests (local pages only)
+        run: |
+          docker run --rm --entrypoint /browser.test             -v "$RUNNER_TEMP/browser.test:/browser.test:ro"             blazesolver:ci -test.v -test.run TestRealUndetectedBrowser -test.timeout 180s
+      - name: Start normal service with noexec tmpfs
+        run: |
+          docker run -d --name blazesolver-ci             -p 127.0.0.1:18193:8191             --tmpfs /tmp:size=512M,mode=1777             blazesolver:ci
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:18193/health; then
+              exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' blazesolver-ci)" != true ]; then
+              break
+            fi
+            sleep 1
+          done
+          docker logs blazesolver-ci
+          exit 1
+      - name: Check runtime contains no compiler or Python
+        run: docker exec blazesolver-ci sh -ec '! command -v go; ! command -v python; ! command -v python3'
+      - name: Runtime logs
+        if: always()
+        run: docker logs blazesolver-ci || true
+      - name: Cleanup
+        if: always()
+        run: docker rm -f -v blazesolver-ci || true
+
+  image:
+    name: Publish GHCR image
+    needs: [go, browser]
+    if: github.event_name != 'pull_request' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Registry name
+        id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v6
+        id: metadata
+        with:
+          images: ${{ steps.image.outputs.name }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=BlazeSolver
+            org.opencontainers.image.authors=Artem
+            org.opencontainers.image.licenses=MIT
+      - name: Build and publish
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/386,linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=release
+          cache-to: type=gha,scope=release,mode=max
+          provenance: true
+
+  archives:
+    name: Release archive (${{ matrix.os }})
+    needs: [go, browser]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, windows]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build executable with bundled Chrome
+        run: bash tools/build-release.sh '${{ matrix.os }}'
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-${{ matrix.os }}
+          path: dist/blazesolver_*
+          if-no-files-found: error
+
+  release:
+    name: Publish release archives
+    needs: archives
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          files: dist/blazesolver_*
+          fail_on_unmatched_files: true
