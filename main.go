@@ -77,5 +77,13 @@ func printBanner(version string) {
 	if info, err := os.Stderr.Stat(); err == nil && info.Mode()&os.ModeCharDevice != 0 && os.Getenv("NO_COLOR") == "" {
 		color, reset = "\033[38;5;208m", "\033[0m"
 	}
-	fmt.Fprintf(os.Stderr, "%s\n    /\\      BlazeSolver\n   /  \\     ─────────────\n  / /\\ \\    Go edition · %s\n /_/  \\_\\   Undetected Chromium\n%s\n", color, version, reset)
+	const banner = `
+        (
+       ( )
+      (   )    BlazeSolver
+     (  (  )   Undetected Chromium · Go
+      \   /    v%s
+       \_/
+`
+	fmt.Fprintf(os.Stderr, "%s"+banner+"%s\n", color, version, reset)
 }

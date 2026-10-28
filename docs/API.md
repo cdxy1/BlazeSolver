@@ -179,13 +179,11 @@ This works like `request.get`, with the addition of the postData parameter. Note
 | PROXY_URL            | none                   | URL for proxy. Will be overwritten by `request` or `sessions` proxy, if used. Example: `http://127.0.0.1:8080`.                          |
 | PROXY_USERNAME       | none                   | Username for proxy. Will be overwritten by `request` or `sessions` proxy, if used. Example: `testuser`.                                  |
 | PROXY_PASSWORD       | none                   | Password for proxy. Will be overwritten by `request` or `sessions` proxy, if used. Example: `testpass`.                                  |
-| CAPTCHA_SOLVER       | none                   | Captcha solving method. It is used when a captcha is encountered. See the Captcha Solvers section.                                       |
 | TZ                   | UTC                    | Timezone used in the logs and the web browser. Example: `TZ=Europe/London`.                                                              |
 | LANG                 | none                   | Language used in the web browser. Example: `LANG=en_GB`.                                                                                 |
 | HEADLESS             | true                   | Only for debugging. To run the web browser in headless mode or visible.                                                                  |
 | DISABLE_MEDIA        | false                  | To disable loading images, CSS, and other media in the web browser to save network bandwidth.                                            |
 | BROWSER_WAIT_TIMEOUT | 1                    | Seconds to wait for the web browser to reach an expected page state on each attempt. Increase it on slow hosts or slow websites.         |
-| TEST_URL             | https://www.google.com | BlazeSolver makes a request on start to make sure the web browser is working. You can change that URL if it is blocked in your country. |
 | PORT                 | 8191                   | Listening port. You don't need to change this if you are running on Docker.                                                              |
 | HOST                 | 0.0.0.0                | Listening interface. You don't need to change this if you are running on Docker.                                                         |
 | PROMETHEUS_ENABLED   | false                  | Enable Prometheus exporter. See the Prometheus section below.                                                                            |
